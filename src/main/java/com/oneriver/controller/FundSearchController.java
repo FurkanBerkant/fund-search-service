@@ -1,0 +1,112 @@
+package com.oneriver.controller;
+
+import com.oneriver.dto.FundSearchResponse;
+import com.oneriver.entity.document.FundDocument;
+import com.oneriver.service.FundSearchService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/funds")
+@RequiredArgsConstructor
+@Slf4j
+@Validated
+public class FundSearchController {
+
+    private final FundSearchService fundSearchService;
+
+    @GetMapping("/search")
+    public ResponseEntity<Map<String, Object>> search(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String umbrellaType,
+            @RequestParam(required = false) Double minOneYearReturn,
+            @RequestParam(required = false, defaultValue = "fundName") String sortBy,
+            @RequestParam(required = false, defaultValue = "asc") String sortDirection,
+            @RequestParam(defaultValue = "0")
+            int page,
+            @RequestParam(defaultValue = "20")
+            int size) {
+
+        log.info("Search request - query: {}, umbrellaType: {}, minReturn: {}, page: {}, size: {}",
+                q, umbrellaType, minOneYearReturn, page, size);
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        SearchHits<FundDocument> searchHits = fundSearchService.searchFunds(
+                q, umbrellaType, minOneYearReturn, sortBy, sortDirection, pageable);
+
+        List<FundSearchResponse> results = fundSearchService.toResponseList(searchHits);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("funds", results);
+        response.put("currentPage", page);
+        response.put("pageSize", size);
+        response.put("totalElements", searchHits.getTotalHits());
+        response.put("totalPages", (int) Math.ceil((double) searchHits.getTotalHits() / size));
+
+        log.info("Search completed - returned {} results out of {} total",
+                results.size(), searchHits.getTotalHits());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/by-umbrella/{type}")
+    public ResponseEntity<Map<String, Object>> getByUmbrellaType(
+            @PathVariable String type,
+            @RequestParam(defaultValue = "0")
+            int page,
+            @RequestParam(defaultValue = "20")
+            int size) {
+
+        log.info("Search by umbrella type: {}, page: {}, size: {}", type, page, size);
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        SearchHits<FundDocument> searchHits = fundSearchService.searchFunds(
+                null, type, null, null, null, pageable);
+
+        List<FundSearchResponse> results = fundSearchService.toResponseList(searchHits);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("funds", results);
+        response.put("umbrellaType", type);
+        response.put("currentPage", page);
+        response.put("pageSize", size);
+        response.put("totalElements", searchHits.getTotalHits());
+        response.put("totalPages", (int) Math.ceil((double) searchHits.getTotalHits() / size));
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/top-performers")
+    public ResponseEntity<Map<String, Object>> getTopPerformers(
+            @RequestParam(required = false, defaultValue = "oneYear") String period,
+            @RequestParam(defaultValue = "10") int limit) {
+
+        log.info("Getting top performers for period: {}, limit: {}", period, limit);
+
+        Pageable pageable = PageRequest.of(0, limit);
+
+        SearchHits<FundDocument> searchHits = fundSearchService.searchFunds(
+                null, null, null, period, "desc", pageable);
+
+        List<FundSearchResponse> results = fundSearchService.toResponseList(searchHits);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("funds", results);
+        response.put("period", period);
+        response.put("count", results.size());
+
+        return ResponseEntity.ok(response);
+    }
+}

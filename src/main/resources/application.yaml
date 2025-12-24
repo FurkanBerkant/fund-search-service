@@ -10,6 +10,8 @@ spring:
       maximum-pool-size: 10
       minimum-idle: 5
       connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
   jpa:
     hibernate:
@@ -24,8 +26,43 @@ spring:
         order_updates: true
         order_inserts: true
         generate_statistics: false
+        format_sql: true
+    show-sql: false
+    open-in-view: false
+
   elasticsearch:
     uris: http://localhost:9200
+    connection-timeout: 10s
+    socket-timeout: 30s
+
+funds:
+  index:
+    name: funds
+    on-startup: false
+    bulk:
+      size: 500
+    async:
+      core-pool-size: 4
+      max-pool-size: 8
+      queue-capacity: 200
+    batch-size: 500
+
 server:
   port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.elasticsearch.client.RestClient: ERROR
+    root: INFO

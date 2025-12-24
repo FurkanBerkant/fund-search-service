@@ -1,4 +1,4 @@
-package com.oneriver.excel.dto;
+package com.oneriver.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExcelFunRowDTO {
+public class ExcelFundRowDTO {
     private String fundCode;
     private String fundName;
     private String umbrellaFundType;

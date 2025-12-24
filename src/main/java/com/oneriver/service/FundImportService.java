@@ -1,95 +1,50 @@
 package com.oneriver.service;
 
+import com.oneriver.dto.ExcelFundRowDTO;
+import com.oneriver.dto.FundImportResult;
 import com.oneriver.entity.Fund;
-import com.oneriver.entity.ReturnPeriods;
-import com.oneriver.excel.dto.ExcelFunRowDTO;
-import com.oneriver.excel.dto.FundImportResponse;
+import com.oneriver.mapper.FundMapper;
 import com.oneriver.repository.FundRepository;
-import com.oneriver.utils.NumberUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class FundImportService {
-
+    private final FundMapper fundMapper;
     private final FundRepository fundRepository;
 
     @Transactional
-    public FundImportResponse process(List<ExcelFunRowDTO> rows) {
+    public FundImportResult process(List<ExcelFundRowDTO> rows) {
         if (rows == null || rows.isEmpty()) {
-            return new FundImportResponse(0, 0, 0);
+            return new FundImportResult(0, 0, 0, List.of(), List.of());
         }
 
-        long start = System.currentTimeMillis();
+        List<Fund> toSave = rows.stream()
+                .map(fundMapper::toEntity)
+                .filter(Objects::nonNull)
+                .toList();
 
-        List<Fund> toSave = new ArrayList<>(rows.size());
-        int mappingErrors = 0;
-
-        for (ExcelFunRowDTO dto : rows) {
-            try {
-                Fund fund = mapToEntity(dto);
-                if (fund != null) {
-                    toSave.add(fund);
-                }
-            } catch (Exception e) {
-                mappingErrors++;
-                log.warn("Row mapping failed: {}", e.getMessage());
-            }
-        }
-
-        int saved = 0;
         try {
-            if (!toSave.isEmpty()) {
-                List<Fund> savedFunds = fundRepository.saveAll(toSave);
-                saved = savedFunds.size();
-            }
+            List<Fund> savedFunds = fundRepository.saveAll(toSave);
+            List<String> savedCodes = savedFunds.stream().map(Fund::getFundCode).toList();
+
+            return new FundImportResult(
+                    rows.size(),
+                    savedFunds.size(),
+                    rows.size() - savedFunds.size(),
+                    savedCodes,
+                    List.of()
+            );
         } catch (Exception e) {
-            log.error("Failed to save funds", e);
-            return FundImportResponse.builder()
-                    .total(rows.size())
-                    .success(0)
-                    .failed(rows.size())
-                    .build();
+            log.error("DB Save Error: ", e);
+            throw new RuntimeException("Database error during fund import", e);
         }
-
-        long elapsed = System.currentTimeMillis() - start;
-        log.info("Import completed in {} ms. Parsed: {}, Saved: {}, Failed: {}",
-                elapsed, rows.size(), saved, mappingErrors);
-
-        return FundImportResponse.builder()
-                .total(rows.size())
-                .success(saved)
-                .failed(rows.size() - saved)
-                .build();
-    }
-
-    private Fund mapToEntity(ExcelFunRowDTO dto) {
-        if (dto.getFundCode() == null || dto.getFundCode().isBlank()) {
-            return null;
-        }
-
-        ReturnPeriods returns = ReturnPeriods.builder()
-                .oneMonth(NumberUtils.parsePercentage(dto.getOneMonth()))
-                .threeMonths(NumberUtils.parsePercentage(dto.getThreeMonth()))
-                .sixMonths(NumberUtils.parsePercentage(dto.getSixMonth()))
-                .yearToDate(NumberUtils.parsePercentage(dto.getYearToDate()))
-                .oneYear(NumberUtils.parsePercentage(dto.getOneYear()))
-                .threeYears(NumberUtils.parsePercentage(dto.getThreeYear()))
-                .fiveYears(NumberUtils.parsePercentage(dto.getFiveYear()))
-                .build();
-
-        return Fund.builder()
-                .fundCode(dto.getFundCode().trim().toUpperCase())
-                .fundName(dto.getFundName())
-                .umbrellaFundType(dto.getUmbrellaFundType())
-                .returnPeriods(returns)
-                .build();
     }
 }

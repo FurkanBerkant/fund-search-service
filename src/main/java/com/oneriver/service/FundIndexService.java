@@ -1,0 +1,220 @@
+package com.oneriver.service;
+
+import com.oneriver.entity.Fund;
+import com.oneriver.entity.ReturnPeriods;
+import com.oneriver.entity.document.FundDocument;
+import com.oneriver.mapper.FundMapper;
+import com.oneriver.repository.FundRepository;
+import com.oneriver.utils.FundConstants;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.IndexOperations;
+import org.springframework.data.elasticsearch.core.document.Document;
+import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class FundIndexService {
+
+    private final ElasticsearchOperations elasticsearchOperations;
+    private final FundRepository fundRepository;
+    private final FundMapper fundMapper;
+    @Value("${funds.index.name}")
+    private String indexName;
+
+    @Value("${funds.index.batch-size:500}")
+    private int batchSize;
+
+    @Transactional(readOnly = true)
+    public int indexAllFromDb() {
+        log.info("Starting full re-indexing from PostgreSQL to Elasticsearch...");
+
+        long startTime = System.currentTimeMillis();
+        List<Fund> allFunds = fundRepository.findAll();
+
+        if (allFunds.isEmpty()) {
+            log.warn("No funds found in database to index");
+            return 0;
+        }
+
+        int indexed = indexFunds(allFunds);
+        long duration = System.currentTimeMillis() - startTime;
+
+        log.info("Full re-indexing completed. Indexed {} funds in {} ms", indexed, duration);
+        return indexed;
+    }
+
+    public void ensureIndexWithMapping() {
+        IndexOperations indexOps = elasticsearchOperations.indexOps(IndexCoordinates.of(indexName));
+
+        if (indexOps.exists()) {
+            log.debug("Elasticsearch index '{}' already exists", indexName);
+            return;
+        }
+
+        try {
+            Map<String, Object> settings = createIndexSettings();
+            Map<String, Object> mapping = createMapping();
+
+            indexOps.create(settings);
+            indexOps.putMapping(Document.from(mapping));
+
+            log.info("Created Elasticsearch index '{}' with custom mapping and settings", indexName);
+        } catch (Exception e) {
+            log.error("Failed to create Elasticsearch index", e);
+            throw new RuntimeException("Index creation failed", e);
+        }
+    }
+
+    public int indexFunds(List<Fund> funds) {
+        if (funds == null || funds.isEmpty()) {
+            log.warn("No funds to index");
+            return 0;
+        }
+
+        ensureIndexWithMapping();
+
+        int totalIndexed = 0;
+        List<FundDocument> allDocs = funds.stream()
+                .map(fundMapper::toDocument)
+                .toList();
+
+        for (int i = 0; i < allDocs.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, allDocs.size());
+            List<FundDocument> batch = allDocs.subList(i, end);
+
+            try {
+                elasticsearchOperations.save(batch, IndexCoordinates.of(indexName));
+                totalIndexed += batch.size();
+                log.debug("Indexed batch {}-{} of {} documents", i, end, allDocs.size());
+            } catch (Exception e) {
+                log.error("Failed to index batch {}-{}", i, end, e);
+                throw new RuntimeException("Batch indexing failed", e);
+            }
+        }
+
+        log.info("Successfully indexed {} documents in {} batches",
+                totalIndexed, (allDocs.size() + batchSize - 1) / batchSize);
+
+        return totalIndexed;
+    }
+
+    @Async("taskExecutor")
+    @Transactional(readOnly = true)
+    public CompletableFuture<Integer> indexByCodesAsync(List<String> fundCodes) {
+        if (fundCodes == null || fundCodes.isEmpty()) {
+            log.warn("No fund codes provided for async indexing");
+            return CompletableFuture.completedFuture(0);
+        }
+
+        try {
+            List<Fund> funds = fundRepository.findAllByFundCodeIn(fundCodes);
+
+            if (funds.isEmpty()) {
+                log.warn("No funds found for provided codes");
+                return CompletableFuture.completedFuture(0);
+            }
+
+            int count = indexFunds(funds);
+            log.info("Async indexing completed successfully for {} funds", count);
+            return CompletableFuture.completedFuture(count);
+
+        } catch (Exception e) {
+            log.error("Async indexing failed for fund codes", e);
+            throw new RuntimeException("Async indexing failed", e);
+        }
+    }
+
+    private FundDocument toDocument(Fund fund) {
+        Map<String, java.math.BigDecimal> returns = new HashMap<>();
+        ReturnPeriods r = fund.getReturnPeriods();
+
+        if (r != null) {
+            if (r.getOneMonth() != null) returns.put("oneMonth", r.getOneMonth());
+            if (r.getThreeMonths() != null) returns.put("threeMonths", r.getThreeMonths());
+            if (r.getSixMonths() != null) returns.put("sixMonths", r.getSixMonths());
+            if (r.getYearToDate() != null) returns.put("yearToDate", r.getYearToDate());
+            if (r.getOneYear() != null) returns.put("oneYear", r.getOneYear());
+            if (r.getThreeYears() != null) returns.put("threeYears", r.getThreeYears());
+            if (r.getFiveYears() != null) returns.put("fiveYears", r.getFiveYears());
+        }
+
+        return FundDocument.builder()
+                .id(fund.getFundCode())
+                .fundCode(fund.getFundCode())
+                .fundName(fund.getFundName())
+                .umbrellaFundType(fund.getUmbrellaFundType())
+                .returnPeriods(returns)
+                .build();
+    }
+
+    private Map<String, Object> createIndexSettings() {
+        Map<String, Object> settings = new HashMap<>();
+        settings.put("number_of_shards", 1);
+        settings.put("number_of_replicas", 1);
+
+        Map<String, Object> analysis = new HashMap<>();
+        Map<String, Object> analyzer = new HashMap<>();
+        analyzer.put("turkish", Map.of(
+                "type", "turkish",
+                "stopwords", "_turkish_"
+        ));
+        analysis.put("analyzer", analyzer);
+        settings.put("analysis", analysis);
+
+        return Map.of("index", settings);
+    }
+
+    private Map<String, Object> createMapping() {
+        Map<String, Object> mapping = new HashMap<>();
+        Map<String, Object> properties = new HashMap<>();
+
+        properties.put(FundConstants.ES_FIELD_FUND_CODE,
+                Map.of("type", "keyword"));
+
+        properties.put(FundConstants.ES_FIELD_FUND_NAME,
+                Map.of(
+                        "type", "text",
+                        "analyzer", "turkish",
+                        "fields", Map.of(
+                                "keyword", Map.of(
+                                        "type", "keyword",
+                                        "ignore_above", 256
+                                )
+                        )
+                ));
+
+        properties.put(FundConstants.ES_FIELD_UMBRELLA_FUND_TYPE,
+                Map.of("type", "keyword"));
+
+        Map<String, Object> returnPeriodsProps = new HashMap<>();
+        List<String> returnFields = List.of(
+                "oneMonth", "threeMonths", "sixMonths",
+                "yearToDate", "oneYear", "threeYears", "fiveYears"
+        );
+
+        for (String field : returnFields) {
+            returnPeriodsProps.put(field, Map.of(
+                    "type", "scaled_float",
+                    "scaling_factor", 10000
+            ));
+        }
+
+        properties.put(FundConstants.ES_FIELD_RETURN_PERIODS,
+                Map.of("properties", returnPeriodsProps));
+
+        mapping.put("properties", properties);
+        return mapping;
+    }
+}

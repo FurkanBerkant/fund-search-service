@@ -1,15 +1,15 @@
 package com.oneriver.service;
 
-import com.oneriver.excel.FundRowMapper;
-import com.oneriver.excel.dto.ExcelFunRowDTO;
-import com.oneriver.excel.dto.ExcelImportResult;
-import com.oneriver.excel.dto.FundImportResponse;
+import com.oneriver.dto.ExcelFundRowDTO;
+import com.oneriver.dto.FundImportResult;
+import com.oneriver.service.excel.FundRowMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -17,12 +17,18 @@ import java.io.IOException;
 public class FundExcelService {
 
     private final ExcelImportService excelImportService;
-    private final FundRowMapper fundRowMapper;
     private final FundImportService fundImportService;
+    private final FundIndexService fundIndexService;
+    private final FundRowMapper fundRowMapper;
 
-    public FundImportResponse importFromExcel(MultipartFile file) throws IOException {
-        ExcelImportResult<ExcelFunRowDTO> excelResult = excelImportService.importFromExcel(file, fundRowMapper);
+    public FundImportResult importAndIndexAsync(MultipartFile file) throws IOException {
+        List<ExcelFundRowDTO> excelData = excelImportService.importFromExcel(file, fundRowMapper);
 
-        return fundImportService.process(excelResult.data());
+        FundImportResult result = fundImportService.process(excelData);
+        if (!result.savedFundCodes().isEmpty()) {
+            fundIndexService.indexByCodesAsync(result.savedFundCodes());
+        }
+
+        return result;
     }
 }
