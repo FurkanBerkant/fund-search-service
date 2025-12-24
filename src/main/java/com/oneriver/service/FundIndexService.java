@@ -1,7 +1,6 @@
 package com.oneriver.service;
 
 import com.oneriver.entity.Fund;
-import com.oneriver.entity.ReturnPeriods;
 import com.oneriver.entity.document.FundDocument;
 import com.oneriver.mapper.FundMapper;
 import com.oneriver.repository.FundRepository;
@@ -32,13 +31,11 @@ public class FundIndexService {
     private final FundMapper fundMapper;
     @Value("${funds.index.name}")
     private String indexName;
-
     @Value("${funds.index.batch-size:500}")
     private int batchSize;
 
     @Transactional(readOnly = true)
     public int indexAllFromDb() {
-        log.info("Starting full re-indexing from PostgreSQL to Elasticsearch...");
 
         long startTime = System.currentTimeMillis();
         List<Fund> allFunds = fundRepository.findAll();
@@ -111,52 +108,25 @@ public class FundIndexService {
     }
 
     @Async("taskExecutor")
-    @Transactional(readOnly = true)
-    public CompletableFuture<Integer> indexByCodesAsync(List<String> fundCodes) {
+    public void indexByCodesAsync(List<String> fundCodes) {
         if (fundCodes == null || fundCodes.isEmpty()) {
             log.warn("No fund codes provided for async indexing");
-            return CompletableFuture.completedFuture(0);
+            return;
         }
 
         try {
             List<Fund> funds = fundRepository.findAllByFundCodeIn(fundCodes);
 
             if (funds.isEmpty()) {
-                log.warn("No funds found for provided codes");
-                return CompletableFuture.completedFuture(0);
+                log.warn("No funds found for provided codes: {}", fundCodes);
+                return;
             }
 
-            int count = indexFunds(funds);
-            log.info("Async indexing completed successfully for {} funds", count);
-            return CompletableFuture.completedFuture(count);
+            indexFunds(funds);
 
         } catch (Exception e) {
-            log.error("Async indexing failed for fund codes", e);
-            throw new RuntimeException("Async indexing failed", e);
+            log.error("Async indexing failed for fund codes: {}", fundCodes, e);
         }
-    }
-
-    private FundDocument toDocument(Fund fund) {
-        Map<String, java.math.BigDecimal> returns = new HashMap<>();
-        ReturnPeriods r = fund.getReturnPeriods();
-
-        if (r != null) {
-            if (r.getOneMonth() != null) returns.put("oneMonth", r.getOneMonth());
-            if (r.getThreeMonths() != null) returns.put("threeMonths", r.getThreeMonths());
-            if (r.getSixMonths() != null) returns.put("sixMonths", r.getSixMonths());
-            if (r.getYearToDate() != null) returns.put("yearToDate", r.getYearToDate());
-            if (r.getOneYear() != null) returns.put("oneYear", r.getOneYear());
-            if (r.getThreeYears() != null) returns.put("threeYears", r.getThreeYears());
-            if (r.getFiveYears() != null) returns.put("fiveYears", r.getFiveYears());
-        }
-
-        return FundDocument.builder()
-                .id(fund.getFundCode())
-                .fundCode(fund.getFundCode())
-                .fundName(fund.getFundName())
-                .umbrellaFundType(fund.getUmbrellaFundType())
-                .returnPeriods(returns)
-                .build();
     }
 
     private Map<String, Object> createIndexSettings() {

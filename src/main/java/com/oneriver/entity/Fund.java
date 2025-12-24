@@ -25,7 +25,7 @@ public class Fund {
     @Column(nullable = false)
     private String fundName;
 
-    private String umbrellaFundType;
+    private String fundType;
 
     @Embedded
     private ReturnPeriods returnPeriods;

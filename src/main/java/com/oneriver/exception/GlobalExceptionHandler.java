@@ -2,6 +2,7 @@ package com.oneriver.exception;
 
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.elasticsearch.UncategorizedElasticsearchException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -131,6 +132,21 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    @ExceptionHandler(UncategorizedElasticsearchException.class)
+    public ResponseEntity<Map<String, Object>> handleElasticsearchException(
+            Exception ex, WebRequest request) {
+
+        log.error("Elasticsearch error occurred", ex);
+
+        Map<String, Object> response = buildErrorResponse(
+                "SEARCH_ERROR",
+                "Search service temporarily unavailable",
+                request.getDescription(false)
+        );
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
     }
 
     private Map<String, Object> buildErrorResponse(

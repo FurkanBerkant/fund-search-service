@@ -1,14 +1,11 @@
-package com.oneriver.service;
+package com.oneriver.service.excel;
 
 import com.oneriver.enums.FundExcelColumn;
-import com.oneriver.service.excel.ExcelRowMapper;
-import com.oneriver.service.excel.FundRowMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -19,9 +16,8 @@ import java.util.Map;
 @Slf4j
 public class ExcelImportService {
 
-    public <T> List<T> importFromExcel(MultipartFile file, ExcelRowMapper<T> rowMapper) throws IOException {
+    public <T> List<T> importFromExcel(MultipartFile file, ExcelRowMapper<T> rowMapper) {
         List<T> data = new ArrayList<>();
-        List<String> errors = new ArrayList<>();
 
         try (InputStream is = file.getInputStream()) {
             Workbook workbook = WorkbookFactory.create(is);

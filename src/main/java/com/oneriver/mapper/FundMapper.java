@@ -8,15 +8,18 @@ import com.oneriver.entity.document.FundDocument;
 import com.oneriver.utils.NumberUtils;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 @Mapper(componentModel = "spring", imports = {NumberUtils.class})
 public interface FundMapper {
 
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "fundCode", expression = "java(dto.getFundCode().trim().toUpperCase())")
     @Mapping(target = "returnPeriods.oneMonth", source = "oneMonth", qualifiedByName = "parsePct")
     @Mapping(target = "returnPeriods.threeMonths", source = "threeMonth", qualifiedByName = "parsePct")
@@ -26,6 +29,17 @@ public interface FundMapper {
     @Mapping(target = "returnPeriods.threeYears", source = "threeYear", qualifiedByName = "parsePct")
     @Mapping(target = "returnPeriods.fiveYears", source = "fiveYear", qualifiedByName = "parsePct")
     Fund toEntity(ExcelFundRowDTO dto);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "fundCode", ignore = true)
+    @Mapping(target = "returnPeriods.oneMonth", source = "oneMonth", qualifiedByName = "parsePct")
+    @Mapping(target = "returnPeriods.threeMonths", source = "threeMonth", qualifiedByName = "parsePct")
+    @Mapping(target = "returnPeriods.sixMonths", source = "sixMonth", qualifiedByName = "parsePct")
+    @Mapping(target = "returnPeriods.yearToDate", source = "yearToDate", qualifiedByName = "parsePct")
+    @Mapping(target = "returnPeriods.oneYear", source = "oneYear", qualifiedByName = "parsePct")
+    @Mapping(target = "returnPeriods.threeYears", source = "threeYear", qualifiedByName = "parsePct")
+    @Mapping(target = "returnPeriods.fiveYears", source = "fiveYear", qualifiedByName = "parsePct")
+    void updateEntity(@MappingTarget Fund existingFund, ExcelFundRowDTO dto);
 
     @Mapping(target = "id", source = "fundCode")
     @Mapping(target = "returnPeriods", source = "returnPeriods", qualifiedByName = "mapReturnPeriods")
@@ -40,7 +54,7 @@ public interface FundMapper {
 
     @Named("mapReturnPeriods")
     default Map<String, BigDecimal> mapReturnPeriods(ReturnPeriods r) {
-        if (r == null) return Map.of();
+        if (r == null) return Collections.emptyMap();
         Map<String, BigDecimal> map = new HashMap<>();
         if (r.getOneMonth() != null) map.put("oneMonth", r.getOneMonth());
         if (r.getThreeMonths() != null) map.put("threeMonths", r.getThreeMonths());
@@ -49,6 +63,6 @@ public interface FundMapper {
         if (r.getOneYear() != null) map.put("oneYear", r.getOneYear());
         if (r.getThreeYears() != null) map.put("threeYears", r.getThreeYears());
         if (r.getFiveYears() != null) map.put("fiveYears", r.getFiveYears());
-        return map;
+        return Collections.unmodifiableMap(map);
     }
 }

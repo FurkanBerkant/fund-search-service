@@ -30,13 +30,5 @@ public final class FundConstants {
     public static final String ES_FIELD_THREE_YEARS = "returnPeriods.threeYears";
     public static final String ES_FIELD_FIVE_YEARS = "returnPeriods.fiveYears";
 
-    public static final String EXCEL_EXTENSION_XLSX = ".xlsx";
-    public static final String EXCEL_EXTENSION_XLS = ".xls";
     public static final String DEFAULT_EXCEL_FILE = "takasbank-tefas-fon-karsilastirma.xlsx";
-
-    public static final String MSG_FILE_EMPTY = "File cannot be empty";
-    public static final String MSG_FILENAME_EMPTY = "File name cannot be empty";
-    public static final String MSG_UNSUPPORTED_FORMAT = "Unsupported file format. Supported formats: .xlsx, .xls";
-    public static final String MSG_IMPORT_SUCCESS = "Excel import completed successfully";
-    public static final String MSG_REINDEX_SUCCESS = "Re-indexing completed successfully";
 }

@@ -11,6 +11,8 @@ services:
       - postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - appnet
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
@@ -26,6 +28,9 @@ services:
       - es-data:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
+    networks:
+      - appnet
+
 
 volumes:
   postgres-data:
@@ -33,3 +38,4 @@ volumes:
 
 networks:
   appnet:
+    driver: bridge
