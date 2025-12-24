@@ -130,12 +130,17 @@ GET /api/funds/search
 |-----------|-----|---------|----------|
 | `query` | String | - | Arama metni (fon kodu/adı) |
 | `umbrellaType` | String | - | Şemsiye fon türü filtresi |
+| `returnPeriod` | String | - | Getiri periyodu (filtreleme için) |
+| `minReturn` | Double | - | Minimum getiri (%) |
+| `maxReturn` | Double | - | Maksimum getiri (%) |
 | `sortBy` | String | `fundName` | Sıralama alanı |
 | `sortDirection` | String | `asc` | Sıralama yönü |
 | `page` | Integer | `0` | Sayfa numarası |
 | `size` | Integer | `20` | Sayfa boyutu (max: 100) |
 
 **sortBy değerleri:** `fundCode`, `fundName`, `oneMonth`, `threeMonths`, `sixMonths`, `yearToDate`, `oneYear`, `threeYears`, `fiveYears`
+
+**returnPeriod değerleri:** `oneMonth`, `threeMonths`, `sixMonths`, `yearToDate`, `oneYear`, `threeYears`, `fiveYears`
 
 ---
 
@@ -220,7 +225,25 @@ curl -s "http://localhost:8080/api/funds/top-performers?period=fiveYears&limit=5
 curl -s "http://localhost:8080/api/funds/search?query=ak&umbrellaType=Serbest%20%C5%9Eemsiye%20Fonu&sortBy=oneYear&sortDirection=desc&page=0&size=10" | jq
 ```
 
-### Test 10: Edge Cases
+### Test 10: Getiri Aralığına Göre Filtreleme (BONUS)
+```bash
+# 1 yıllık getirisi %50'den fazla olan fonlar
+curl -s "http://localhost:8080/api/funds/search?returnPeriod=oneYear&minReturn=50" | jq
+
+# 1 yıllık getirisi %20 ile %50 arasında olan fonlar
+curl -s "http://localhost:8080/api/funds/search?returnPeriod=oneYear&minReturn=20&maxReturn=50" | jq
+
+# 3 aylık getirisi %10'dan az olan fonlar
+curl -s "http://localhost:8080/api/funds/search?returnPeriod=threeMonths&maxReturn=10" | jq
+
+# 5 yıllık getirisi %100'den fazla, azalan sıralı
+curl -s "http://localhost:8080/api/funds/search?returnPeriod=fiveYears&minReturn=100&sortBy=fiveYears&sortDirection=desc" | jq
+
+# Kombine: Serbest fonlarda 1 yıllık getirisi %30'dan fazla olanlar
+curl -s "http://localhost:8080/api/funds/search?umbrellaType=Serbest%20%C5%9Eemsiye%20Fonu&returnPeriod=oneYear&minReturn=30&sortBy=oneYear&sortDirection=desc" | jq
+```
+
+### Test 11: Edge Cases
 ```bash
 # Boş sonuç
 curl -s "http://localhost:8080/api/funds/search?query=XYZNONEXISTENT" | jq

@@ -57,15 +57,27 @@ public interface FundMapper {
 
     @Named("mapReturnPeriods")
     default Map<String, BigDecimal> mapReturnPeriods(ReturnPeriods r) {
-        if (r == null) return Collections.emptyMap();
         Map<String, BigDecimal> map = new HashMap<>();
-        if (r.getOneMonth() != null) map.put("oneMonth", r.getOneMonth());
-        if (r.getThreeMonths() != null) map.put("threeMonths", r.getThreeMonths());
-        if (r.getSixMonths() != null) map.put("sixMonths", r.getSixMonths());
-        if (r.getYearToDate() != null) map.put("yearToDate", r.getYearToDate());
-        if (r.getOneYear() != null) map.put("oneYear", r.getOneYear());
-        if (r.getThreeYears() != null) map.put("threeYears", r.getThreeYears());
-        if (r.getFiveYears() != null) map.put("fiveYears", r.getFiveYears());
+
+        if (r == null) {
+            map.put("oneMonth", BigDecimal.ZERO);
+            map.put("threeMonths", BigDecimal.ZERO);
+            map.put("sixMonths", BigDecimal.ZERO);
+            map.put("yearToDate", BigDecimal.ZERO);
+            map.put("oneYear", BigDecimal.ZERO);
+            map.put("threeYears", BigDecimal.ZERO);
+            map.put("fiveYears", BigDecimal.ZERO);
+            return Collections.unmodifiableMap(map);
+        }
+
+        map.put("oneMonth", r.getOneMonth() != null ? r.getOneMonth() : BigDecimal.ZERO);
+        map.put("threeMonths", r.getThreeMonths() != null ? r.getThreeMonths() : BigDecimal.ZERO);
+        map.put("sixMonths", r.getSixMonths() != null ? r.getSixMonths() : BigDecimal.ZERO);
+        map.put("yearToDate", r.getYearToDate() != null ? r.getYearToDate() : BigDecimal.ZERO);
+        map.put("oneYear", r.getOneYear() != null ? r.getOneYear() : BigDecimal.ZERO);
+        map.put("threeYears", r.getThreeYears() != null ? r.getThreeYears() : BigDecimal.ZERO);
+        map.put("fiveYears", r.getFiveYears() != null ? r.getFiveYears() : BigDecimal.ZERO);
+
         return Collections.unmodifiableMap(map);
     }
 }

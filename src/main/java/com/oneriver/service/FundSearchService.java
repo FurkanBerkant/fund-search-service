@@ -25,8 +25,9 @@ public class FundSearchService {
     private final ElasticsearchOperations elasticsearchOperations;
     private final FundMapper fundMapper;
 
-    public SearchHits<FundDocument> searchFunds(String query, String umbrellaType, String sortBy,
-                                                String sortDirection, Pageable pageable) {
+    public SearchHits<FundDocument> searchFunds(String query, String umbrellaType,
+                                                String returnPeriod, Double minReturn, Double maxReturn,
+                                                String sortBy, String sortDirection, Pageable pageable) {
 
         NativeQueryBuilder queryBuilder = NativeQuery.builder();
 
@@ -43,6 +44,21 @@ public class FundSearchService {
             if (umbrellaType != null && !umbrellaType.isBlank()) {
                 b.filter(f -> f.term(t -> t.field(FundConstants.ES_FIELD_UMBRELLA_FUND_TYPE).value(umbrellaType)));
             }
+
+            if ((minReturn != null || maxReturn != null) && returnPeriod != null) {
+                String fieldName = mapReturnPeriodField(returnPeriod);
+                final Double min = minReturn;
+                final Double max = maxReturn;
+                b.filter(f -> f.range(r -> r
+                        .number(n -> {
+                            n.field(fieldName);
+                            if (min != null) n.gte(min);
+                            if (max != null) n.lte(max);
+                            return n;
+                        })
+                ));
+            }
+
             return b;
         }));
 
@@ -77,6 +93,21 @@ public class FundSearchService {
             case FundConstants.SORT_FUND_NAME -> FundConstants.ES_FIELD_FUND_NAME_KEYWORD;
             case FundConstants.SORT_UMBRELLA_FUND_TYPE -> FundConstants.ES_FIELD_UMBRELLA_FUND_TYPE;
             default -> sortBy;
+        };
+    }
+
+    private String mapReturnPeriodField(String period) {
+        if (period == null) return FundConstants.ES_FIELD_ONE_YEAR;
+
+        return switch (period.toLowerCase()) {
+            case "onemonth", "1month" -> FundConstants.ES_FIELD_ONE_MONTH;
+            case "threemonths", "3months" -> FundConstants.ES_FIELD_THREE_MONTHS;
+            case "sixmonths", "6months" -> FundConstants.ES_FIELD_SIX_MONTHS;
+            case "yeartodate", "ytd" -> FundConstants.ES_FIELD_YEAR_TO_DATE;
+            case "oneyear", "1year" -> FundConstants.ES_FIELD_ONE_YEAR;
+            case "threeyears", "3years" -> FundConstants.ES_FIELD_THREE_YEARS;
+            case "fiveyears", "5years" -> FundConstants.ES_FIELD_FIVE_YEARS;
+            default -> FundConstants.ES_FIELD_ONE_YEAR;
         };
     }
 }

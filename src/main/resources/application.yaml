@@ -15,7 +15,7 @@ spring:
       max-lifetime: 1800000
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     properties:
       hibernate:
         jdbc:
@@ -38,7 +38,7 @@ spring:
 funds:
   index:
     name: funds
-    on-startup: false
+    on-startup: true
     bulk:
       size: 500
     async:

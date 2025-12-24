@@ -31,18 +31,21 @@ public class FundSearchController {
     public ResponseEntity<Map<String, Object>> search(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String umbrellaType,
+            @RequestParam(required = false) String returnPeriod,
+            @RequestParam(required = false) Double minReturn,
+            @RequestParam(required = false) Double maxReturn,
             @RequestParam(required = false, defaultValue = "fundName") String sortBy,
             @RequestParam(required = false, defaultValue = "asc") String sortDirection,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
 
-        log.info("Search request - query: {}, umbrellaType: {}, page: {}, size: {}",
-                query, umbrellaType, page, size);
+        log.info("Search request - query: {}, umbrellaType: {}, returnPeriod: {}, minReturn: {}, maxReturn: {}, page: {}, size: {}",
+                query, umbrellaType, returnPeriod, minReturn, maxReturn, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
 
         SearchHits<FundDocument> searchHits = fundSearchService.searchFunds(
-                query, umbrellaType, sortBy, sortDirection, pageable);
+                query, umbrellaType, returnPeriod, minReturn, maxReturn, sortBy, sortDirection, pageable);
 
         return buildSearchResponse(searchHits, page, size, Map.of());
     }
@@ -58,7 +61,7 @@ public class FundSearchController {
         Pageable pageable = PageRequest.of(page, size);
 
         SearchHits<FundDocument> searchHits = fundSearchService.searchFunds(
-                null, type, null, null, pageable);
+                null, type, null, null, null, null, null, pageable);
 
         Map<String, Object> response = buildSearchResponse(searchHits, page, size,
                 Map.of("umbrellaType", type)).getBody();
@@ -76,7 +79,7 @@ public class FundSearchController {
         Pageable pageable = PageRequest.of(0, limit);
 
         SearchHits<FundDocument> searchHits = fundSearchService.searchFunds(
-                null, null, period, "desc", pageable);
+                null, null, null, null, null, period, "desc", pageable);
 
         List<FundSearchResponse> results = fundSearchService.toResponseList(searchHits);
 
