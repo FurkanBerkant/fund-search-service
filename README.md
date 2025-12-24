@@ -1,174 +1,287 @@
-# Fund Search Service
+# 🏦 Fund Search Service
 
-## Project Overview
+Türkiye yatırım fonlarını arama, filtreleme ve analiz etmek için geliştirilmiş Spring Boot uygulaması.
 
-Fund Search Service is a Spring Boot application for searching, filtering, and analyzing investment funds (Turkey-focused). Data can be imported from an Excel file (Apache POI), persisted to PostgreSQL, and indexed into Elasticsearch for fast search. The project supports batch import, async indexing, paging, sorting and multiple filtering options.
+## 📋 İçindekiler
 
-## Quick Start (Setup)
+- [Özellikler](#-özellikler)
+- [Teknolojiler](#-teknolojiler)
+- [Kurulum](#-kurulum)
+- [API Dokümantasyonu](#-api-dokümantasyonu)
+- [Test Senaryoları](#-test-senaryoları)
+- [Swagger UI](#-swagger-ui)
+- [Konfigürasyon](#%EF%B8%8F-konfigürasyon)
+- [Troubleshooting](#-troubleshooting)
 
-Prerequisites
+---
 
-- Java 21 installed (check with `java -version`)
-- Maven 3.8+
-- Docker & Docker Compose (optional but recommended)
+## ✨ Özellikler
 
-Steps
+| Özellik | Açıklama |
+|---------|----------|
+| 📥 Excel Import | Apache POI ile Excel dosyasından fon verisi okuma |
+| 🔍 Full-Text Search | Fon kodu ve adına göre fuzzy arama |
+| 📄 Sayfalama | Sayfa bazlı sonuç döndürme |
+| 🔢 Sıralama | Getiri periyotlarına göre sıralama |
+| 🏷️ Filtreleme | Şemsiye fon türüne göre filtreleme |
+| 🚀 Async Indexing | Asenkron Elasticsearch indeksleme |
+| 🔄 Startup Import | Uygulama başlangıcında otomatik veri yükleme |
 
-1) Clone the repository
+---
+
+## 🛠 Teknolojiler
+
+| Teknoloji | Versiyon | Açıklama |
+|-----------|----------|----------|
+| Java | 21 | JDK |
+| Spring Boot | 3.x | Framework |
+| PostgreSQL | 15 | İlişkisel veritabanı |
+| Elasticsearch | 8.10.2 | Arama motoru |
+| Apache POI | 5.4.0 | Excel okuma |
+| MapStruct | 1.5.5 | DTO mapping |
+| Lombok | 1.18.30 | Boilerplate azaltma |
+| Docker Compose | 3.8 | Konteyner yönetimi |
+
+---
+
+## 🚀 Kurulum
+
+### Gereksinimler
+
+```bash
+java -version          # Java 21 gerekli
+mvn -version           # Maven 3.8+ gerekli
+docker --version       # Docker gerekli
+docker compose version # Docker Compose gerekli
+```
+
+### Adım 1: Repository'yi Klonla
 
 ```bash
 git clone <repository-url>
 cd fund-search-service
 ```
 
-2) Start PostgreSQL and Elasticsearch using Docker Compose (recommended)
+### Adım 2: Docker ile Servisleri Başlat
 
 ```bash
-# from project root
+cd docker
 docker compose up -d
+cd ..
 ```
 
-This brings up PostgreSQL on port 5432 and Elasticsearch on port 9200 by default (see `docker/docker-compose.yml`).
-
-3) Build the application
+Servislerin hazır olduğunu kontrol et:
 
 ```bash
-mvn clean package
+# Elasticsearch
+curl http://localhost:9200
+
+# PostgreSQL
+docker exec -it docker-postgres-1 pg_isready -U postgres
 ```
 
-4) Run the application
+### Adım 3: Uygulamayı Çalıştır
 
 ```bash
-# for development
-mvn spring-boot:run
-# or run the packaged jar
+# Derleme
+mvn clean package -DskipTests
+
+# Çalıştırma
 java -jar target/fund-search-service-0.0.1-SNAPSHOT.jar
 ```
 
-The application runs by default on http://localhost:8080.
+Uygulama: http://localhost:8080
 
-## Configuration
+---
 
-Main configuration is in `src/main/resources/application.yaml`.
+## 📚 API Dokümantasyonu
 
-Important settings:
+Base URL: `http://localhost:8080/api/funds`
 
-- `spring.datasource.*` (JDBC URL, username, password) — when using the provided Docker Compose the defaults are `jdbc:postgresql://localhost:5432/funds_db`, user `postgres`, password `postgres`.
-- `spring.elasticsearch.uris` — default `http://localhost:9200`.
-- `funds.index.on-startup` — if true the app may import/index sample Excel data at startup.
+### 1️⃣ Excel Import
 
-Note: JPA `ddl-auto` is currently set to `create-drop` in `application.yaml`. Change to `validate` or `none` in production.
-
-## Sample Excel file
-
-A sample Excel file is included in the repository: `src/main/resources/takasbank-tefas-fon-karsilastirma.xlsx`.
-
-- Automatic import on startup: set `funds.index.on-startup: true`.
-- Manual import via API: use the `import-and-index` endpoint described below.
-
-## API (actual endpoints in the code)
-
-I inspected the project controllers and documented only the endpoints that exist in the code. The following endpoints are available under the base path `/api/funds`.
-
-1) POST /api/funds/import-and-index
-- Purpose: Upload an Excel file and start asynchronous import & indexing.
-- Consumes: multipart/form-data
-- Form field: `file` (the Excel file)
-- Response: HTTP 202 ACCEPTED with a JSON containing import stats and saved codes.
-
-Example:
-
-```bash
-curl -X POST http://localhost:8080/api/funds/import-and-index \
-  -F "file=@takasbank-tefas-fon-karsilastirma.xlsx"
+```http
+POST /api/funds/import-and-index
+Content-Type: multipart/form-data
 ```
 
-2) GET /api/funds/search
-- Purpose: Full-text and filtered search over indexed funds.
-- Query parameters:
-  - `q` (optional) — free text query
-  - `umbrellaType` (optional) — filter by umbrella fund type
-  - `minOneYearReturn` (optional, Double) — filter by 1-year return minimum
-  - `sortBy` (optional, default: `fundName`)
-  - `sortDirection` (optional, default: `asc`)
-  - `page` (optional, default: 0)
-  - `size` (optional, default: 20)
-- Response: JSON with `funds` list and pagination metadata.
+| Parametre | Tip | Zorunlu | Açıklama |
+|-----------|-----|---------|----------|
+| `file` | MultipartFile | ✅ | Excel dosyası (.xlsx) |
 
-Example:
-
-```bash
-curl "http://localhost:8080/api/funds/search?q=AKBANK&page=0&size=20"
-```
-
-3) GET /api/funds/by-umbrella/{type}
-- Purpose: Search funds by umbrella fund type.
-- Path variable: `{type}` — umbrella fund type (URL-encoded if contains spaces)
-- Query parameters: `page`, `size` (optional)
-
-Example:
-
-```bash
-curl "http://localhost:8080/api/funds/by-umbrella/Hisse%20Senedi%20Fonu?page=0&size=10"
-```
-
-4) GET /api/funds/top-performers
-- Purpose: Retrieve top performing funds for a given period.
-- Query parameters:
-  - `period` (optional, default: `oneYear`) — the return period to sort by
-  - `limit` (optional, default: 10) — number of results
-
-Example:
-
-```bash
-curl "http://localhost:8080/api/funds/top-performers?period=oneYear&limit=10"
-```
-
-Response DTO (FundSearchResponse)
-
-The search endpoints return items that match the `FundSearchResponse` DTO in the code. Fields:
-
-- `fundCode` (String)
-- `fundName` (String)
-- `umbrellaFundType` (String)
-- `returnPeriods` (Map<String, BigDecimal>) — map of period keys to numeric returns (e.g. `oneYear`, `threeYears`)
-
-Example item:
-
+**Response:** `202 ACCEPTED`
 ```json
 {
-  "fundCode": "AKB",
-  "fundName": "AKBANK HİSSE SENEDİ FONU",
-  "umbrellaFundType": "Hisse Senedi Fonu",
-  "returnPeriods": {
-    "oneMonth": 5.23,
-    "threeMonths": 12.45,
-    "sixMonths": 25.67,
-    "yearToDate": 45.89,
-    "oneYear": 52.34
-  }
+  "status": "accepted",
+  "stats": { "total": 150, "success": 148, "failed": 2 },
+  "savedCodes": ["ABC", "XYZ"]
 }
 ```
 
-## Troubleshooting
+---
 
-- Elasticsearch connection: `curl http://localhost:9200` to check whether ES is up.
-- PostgreSQL connection: `psql -U postgres -d funds_db -c "SELECT 1"` or check Docker logs.
-- If import fails: verify Excel format and check application logs for errors.
+### 2️⃣ Fon Arama
 
-## Notes
-
-- pom.xml defines Java version 21; ensure local JDK matches.
-- The project disables Elasticsearch security in the included `docker-compose.yml` for local development (`xpack.security.enabled=false`). Don't use this configuration in production.
-
-## Packaging / Production
-
-Build and run the packaged jar:
-
-```bash
-mvn clean package -DskipTests
-java -jar target/fund-search-service-0.0.1-SNAPSHOT.jar
+```http
+GET /api/funds/search
 ```
 
+| Parametre | Tip | Default | Açıklama |
+|-----------|-----|---------|----------|
+| `query` | String | - | Arama metni (fon kodu/adı) |
+| `umbrellaType` | String | - | Şemsiye fon türü filtresi |
+| `sortBy` | String | `fundName` | Sıralama alanı |
+| `sortDirection` | String | `asc` | Sıralama yönü |
+| `page` | Integer | `0` | Sayfa numarası |
+| `size` | Integer | `20` | Sayfa boyutu (max: 100) |
+
+**sortBy değerleri:** `fundCode`, `fundName`, `oneMonth`, `threeMonths`, `sixMonths`, `yearToDate`, `oneYear`, `threeYears`, `fiveYears`
+
+---
+
+### 3️⃣ Şemsiye Türüne Göre Listeleme
+
+```http
+GET /api/funds/by-umbrella/{type}
+```
+
+---
+
+### 4️⃣ En İyi Performans Gösteren Fonlar
+
+```http
+GET /api/funds/top-performers?period=oneYear&limit=10
+```
+
+| Parametre | Default | Açıklama |
+|-----------|---------|----------|
+| `period` | `oneYear` | Getiri periyodu |
+| `limit` | `10` | Sonuç limiti |
+
+---
+
+## 🧪 Test Senaryoları
+
+### Test 1: Excel Import
+```bash
+curl -X POST http://localhost:8080/api/funds/import-and-index \
+  -F "file=@src/main/resources/takasbank-tefas-fon-karsilastirma.xlsx"
+```
+
+### Test 2: Tüm Fonları Listele
+```bash
+curl -s "http://localhost:8080/api/funds/search" | jq
+```
+
+### Test 3: Partial Match Arama (AK → AKBANK)
+```bash
+curl -s "http://localhost:8080/api/funds/search?query=AK" | jq
+```
+
+### Test 4: Fon Adı ile Arama
+```bash
+curl -s "http://localhost:8080/api/funds/search?query=Hisse" | jq
+```
+
+### Test 5: Şemsiye Türü Filtreleme
+```bash
+curl -s "http://localhost:8080/api/funds/search?umbrellaType=Serbest%20%C5%9Eemsiye%20Fonu" | jq
+```
+
+### Test 6: Getiriye Göre Sıralama
+```bash
+# 1 yıllık getiriye göre azalan
+curl -s "http://localhost:8080/api/funds/search?sortBy=oneYear&sortDirection=desc" | jq
+
+# 3 aylık getiriye göre artan
+curl -s "http://localhost:8080/api/funds/search?sortBy=threeMonths&sortDirection=asc" | jq
+```
+
+### Test 7: Sayfalama
+```bash
+# Sayfa 0, 10 kayıt
+curl -s "http://localhost:8080/api/funds/search?page=0&size=10" | jq
+
+# Sayfa 1, 10 kayıt
+curl -s "http://localhost:8080/api/funds/search?page=1&size=10" | jq
+```
+
+### Test 8: En İyi Performans
+```bash
+# 1 yıllık en iyi 10 fon
+curl -s "http://localhost:8080/api/funds/top-performers?period=oneYear&limit=10" | jq
+
+# 5 yıllık en iyi 5 fon
+curl -s "http://localhost:8080/api/funds/top-performers?period=fiveYears&limit=5" | jq
+```
+
+### Test 9: Kombine Filtreler
+```bash
+curl -s "http://localhost:8080/api/funds/search?query=ak&umbrellaType=Serbest%20%C5%9Eemsiye%20Fonu&sortBy=oneYear&sortDirection=desc&page=0&size=10" | jq
+```
+
+### Test 10: Edge Cases
+```bash
+# Boş sonuç
+curl -s "http://localhost:8080/api/funds/search?query=XYZNONEXISTENT" | jq
+
+# Geçersiz sayfa (validation hatası beklenir)
+curl -s "http://localhost:8080/api/funds/search?page=-1"
+```
+
+---
+
+## 📖 Swagger UI
+
+```
+http://localhost:8080/swagger-ui.html
+```
+
+---
+
+## ⚙️ Konfigürasyon
+
+| Ayar | Değer | Açıklama |
+|------|-------|----------|
+| `server.port` | 8080 | Uygulama portu |
+| `spring.datasource.url` | jdbc:postgresql://localhost:5432/funds_db | PostgreSQL |
+| `spring.elasticsearch.uris` | http://localhost:9200 | Elasticsearch |
+| `funds.index.on-startup` | false | Başlangıçta otomatik import |
+
+**Startup Import Aktifleştirme:**
+```yaml
+funds:
+  index:
+    on-startup: true
+```
+
+---
+
+## 🔧 Troubleshooting
+
+### Elasticsearch Hatası
+```bash
+curl http://localhost:9200
+docker logs docker-elasticsearch-1
+```
+
+### PostgreSQL Hatası
+```bash
+docker exec -it docker-postgres-1 pg_isready -U postgres
+```
+
+### Index Yok Hatası
+```bash
+# Önce import yap
+curl -X POST http://localhost:8080/api/funds/import-and-index \
+  -F "file=@src/main/resources/takasbank-tefas-fon-karsilastirma.xlsx"
+```
+
+### Servisleri Yeniden Başlat
+```bash
+cd docker
+docker compose down
+docker compose up -d
+```
 
 ---

@@ -44,6 +44,7 @@ public interface FundMapper {
     void updateEntity(@MappingTarget Fund existingFund, ExcelFundRowDTO dto);
 
     @Mapping(target = "id", source = "fundCode")
+    @Mapping(target = "umbrellaFundType", source = "fundType")
     @Mapping(target = "returnPeriods", source = "returnPeriods", qualifiedByName = "mapReturnPeriods")
     FundDocument toDocument(Fund fund);
 

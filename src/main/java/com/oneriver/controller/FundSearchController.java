@@ -29,7 +29,7 @@ public class FundSearchController {
 
     @GetMapping("/search")
     public ResponseEntity<Map<String, Object>> search(
-            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String query,
             @RequestParam(required = false) String umbrellaType,
             @RequestParam(required = false, defaultValue = "fundName") String sortBy,
             @RequestParam(required = false, defaultValue = "asc") String sortDirection,
@@ -37,12 +37,12 @@ public class FundSearchController {
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
 
         log.info("Search request - query: {}, umbrellaType: {}, page: {}, size: {}",
-                q, umbrellaType, page, size);
+                query, umbrellaType, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
 
         SearchHits<FundDocument> searchHits = fundSearchService.searchFunds(
-                q, umbrellaType, sortBy, sortDirection, pageable);
+                query, umbrellaType, sortBy, sortDirection, pageable);
 
         return buildSearchResponse(searchHits, page, size, Map.of());
     }
