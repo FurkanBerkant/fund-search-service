@@ -21,6 +21,7 @@ public interface FundMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "fundCode", expression = "java(dto.getFundCode().trim().toUpperCase())")
+    @Mapping(target = "fundType", source = "umbrellaFundType")
     @Mapping(target = "returnPeriods.oneMonth", source = "oneMonth", qualifiedByName = "parsePct")
     @Mapping(target = "returnPeriods.threeMonths", source = "threeMonth", qualifiedByName = "parsePct")
     @Mapping(target = "returnPeriods.sixMonths", source = "sixMonth", qualifiedByName = "parsePct")
@@ -32,6 +33,7 @@ public interface FundMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "fundCode", ignore = true)
+    @Mapping(target = "fundType", source = "umbrellaFundType")
     @Mapping(target = "returnPeriods.oneMonth", source = "oneMonth", qualifiedByName = "parsePct")
     @Mapping(target = "returnPeriods.threeMonths", source = "threeMonth", qualifiedByName = "parsePct")
     @Mapping(target = "returnPeriods.sixMonths", source = "sixMonth", qualifiedByName = "parsePct")

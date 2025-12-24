@@ -30,8 +30,6 @@ services:
       - "9200:9200"
     networks:
       - appnet
-
-
 volumes:
   postgres-data:
   es-data:

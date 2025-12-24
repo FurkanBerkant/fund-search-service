@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,7 +24,7 @@ public class FundController {
     private final FundExcelService fundExcelService;
 
     @PostMapping(value = "/import-and-index", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Map<String, Object>> importAndIndex(@RequestParam("file") MultipartFile file) throws IOException {
+    public ResponseEntity<Map<String, Object>> importAndIndex(@RequestParam("file") MultipartFile file) {
         FundImportResult result = fundExcelService.importAndIndexAsync(file);
 
         Map<String, Object> response = new HashMap<>();

@@ -13,11 +13,9 @@ public class NumberUtils {
                 .replace("%", "")
                 .replace("\u00A0", "")
                 .trim();
-
         if (cleanValue.isEmpty() || cleanValue.equals("-")) {
             return null;
         }
-
         cleanValue = cleanValue.replace(",", ".");
 
         try {
