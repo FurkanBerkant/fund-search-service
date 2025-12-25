@@ -87,7 +87,7 @@ Otomatik setup servisi loglarını kontrol etmek isterseniz:
 
 ```bash
 # elastic-setup konteyneri one-shot çalışır; logları kısa süre sonra tamamlanıp çıkar
-docker logs -f fund_search-elastic-setup
+docker logs -f elastic-setup
 
 # Eğer setup servisini tekrar elle çalıştırmak isterseniz
 docker compose -f docker/docker-compose.yml run --rm elastic-setup
