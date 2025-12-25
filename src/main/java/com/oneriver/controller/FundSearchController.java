@@ -39,9 +39,6 @@ public class FundSearchController {
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
 
-        log.info("Search request - query: {}, umbrellaType: {}, returnPeriod: {}, minReturn: {}, maxReturn: {}, page: {}, size: {}",
-                query, umbrellaType, returnPeriod, minReturn, maxReturn, page, size);
-
         Pageable pageable = PageRequest.of(page, size);
 
         SearchHits<FundDocument> searchHits = fundSearchService.searchFunds(
@@ -55,8 +52,6 @@ public class FundSearchController {
             @PathVariable String type,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-
-        log.info("Search by umbrella type: {}, page: {}, size: {}", type, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
 
@@ -73,8 +68,6 @@ public class FundSearchController {
     public ResponseEntity<Map<String, Object>> getTopPerformers(
             @RequestParam(required = false, defaultValue = "oneYear") String period,
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
-
-        log.info("Getting top performers for period: {}, limit: {}", period, limit);
 
         Pageable pageable = PageRequest.of(0, limit);
 
@@ -109,10 +102,7 @@ public class FundSearchController {
         if (!additionalInfo.isEmpty()) {
             response.put("filters", additionalInfo);
         }
-
-        log.info("Search completed - returned {} results out of {} total",
-                results.size(), searchHits.getTotalHits());
-
+        
         return ResponseEntity.ok(response);
     }
 }
