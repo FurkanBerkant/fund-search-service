@@ -10,7 +10,7 @@ Türkiye yatırım fonlarını arama, filtreleme ve analiz etmek için geliştir
 - [API Dokümantasyonu](#-api-dokümantasyonu)
 - [Test Senaryoları](#-test-senaryoları)
 - [Swagger UI](#-swagger-ui)
-- [Konfigürasyon](#%EF%B8%8F-konfigürasyon)
+- [Konfigürasyon](#konfigürasyon)
 - [Troubleshooting](#-troubleshooting)
 
 ---
@@ -64,10 +64,13 @@ cd fund-search-service
 
 ### Adım 2: Docker ile Servisleri Başlat
 
+Proje içindeki Docker Compose dosyası `docker/docker-compose.yml` olarak yer alır. Yeni `elastic-setup` servisi sayesinde Elasticsearch ve Kibana için gerekli index/template ve Kibana Data View oluşturma adımları otomatik çalıştırılır — manuel işlem yapmanız gerekmez.
+
+Projeyi kök dizinden şu şekilde başlatın:
+
 ```bash
-cd docker
-docker compose up -d
-cd ..
+# Proje kökünden (fund-search-service) çalıştırın
+docker compose -f docker/docker-compose.yml up -d
 ```
 
 Servislerin hazır olduğunu kontrol et:
@@ -76,9 +79,21 @@ Servislerin hazır olduğunu kontrol et:
 # Elasticsearch
 curl http://localhost:9200
 
-# PostgreSQL
-docker exec -it docker-postgres-1 pg_isready -U postgres
+# Kibana
+# Tarayıcı: http://localhost:5601
 ```
+
+Otomatik setup servisi loglarını kontrol etmek isterseniz:
+
+```bash
+# elastic-setup konteyneri one-shot çalışır; logları kısa süre sonra tamamlanıp çıkar
+docker logs -f fund_search-elastic-setup
+
+# Eğer setup servisini tekrar elle çalıştırmak isterseniz
+docker compose -f docker/docker-compose.yml run --rm elastic-setup
+```
+
+(Not: `elastic-setup` script'i şu adımları gerçekleştirir: ES hazır olana kadar bekler, `funds` index template/mapping oluşturur, `funds` index'i yoksa oluşturur, Kibana hazır olana kadar bekler ve Kibana API üzerinden `funds` data view oluşturmaya çalışır.)
 
 ### Adım 3: Uygulamayı Çalıştır
 
@@ -303,26 +318,43 @@ funds:
 ### Elasticsearch Hatası
 ```bash
 curl http://localhost:9200
-docker logs docker-elasticsearch-1
+# ES konteyner logları
+docker logs -f elasticsearch
 ```
 
 ### PostgreSQL Hatası
 ```bash
-docker exec -it docker-postgres-1 pg_isready -U postgres
+# PostgreSQL container adı: postgres
+# Basit sağlık kontrolü
+docker exec -it postgres pg_isready -U postgres
+
+# Veya compose üzerinden
+docker compose -f docker/docker-compose.yml exec postgres pg_isready -U postgres
+```
+
+### Kibana Hatası
+```bash
+# Kibana çalışıyor mu kontrol et
+curl -sS http://localhost:5601/ | head -n 20
+# Kibana servis logları
+docker logs -f kibana
 ```
 
 ### Index Yok Hatası
 ```bash
-# Önce import yap
+# Eğer 'funds' index'i görünmüyorsa setup servisi atlamış veya uygulama veriyi göndermemiş olabilir.
+# Önce otomatik setup loglarını kontrol edin
+docker logs fund_search-elastic-setup
+
+# Eğer uygulama veriyi index'lemiyorsa elle import yapabilirsiniz
 curl -X POST http://localhost:8080/api/funds/import-and-index \
   -F "file=@src/main/resources/takasbank-tefas-fon-karsilastirma.xlsx"
 ```
 
 ### Servisleri Yeniden Başlat
 ```bash
-cd docker
-docker compose down
-docker compose up -d
+docker compose -f docker/docker-compose.yml down
+docker compose -f docker/docker-compose.yml up -d
 ```
 
 ---
