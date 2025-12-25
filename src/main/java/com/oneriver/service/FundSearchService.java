@@ -4,6 +4,8 @@ import com.oneriver.dto.FundSearchResponse;
 import com.oneriver.entity.document.FundDocument;
 import com.oneriver.mapper.FundMapper;
 import com.oneriver.utils.FundConstants;
+import com.oneriver.enums.SortField;
+import com.oneriver.enums.ReturnPeriodType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -33,12 +35,13 @@ public class FundSearchService {
 
         queryBuilder.withQuery(q -> q.bool(b -> {
             if (query != null && !query.isBlank()) {
-                b.must(m -> m.bool(sb -> sb
-                        .should(s -> s.match(ma -> ma.field(FundConstants.ES_FIELD_FUND_CODE)
-                                .query(query).fuzziness("AUTO")))
-                        .should(s -> s.match(ma -> ma.field(FundConstants.ES_FIELD_FUND_NAME)
-                                .query(query).fuzziness("AUTO")))
-                ));
+                return b.must(m -> m.bool(sb -> {
+                    sb.should(s -> s.match(ma -> ma.field(FundConstants.ES_FIELD_FUND_CODE)
+                            .query(query).fuzziness("AUTO")));
+                    sb.should(s -> s.match(ma -> ma.field(FundConstants.ES_FIELD_FUND_NAME)
+                            .query(query).fuzziness("AUTO")));
+                    return sb;
+                }));
             }
 
             if (umbrellaType != null && !umbrellaType.isBlank()) {
@@ -79,35 +82,14 @@ public class FundSearchService {
     }
 
     private String mapSortField(String sortBy) {
-        String lowerSortBy = sortBy.toLowerCase();
-
-        return switch (lowerSortBy) {
-            case FundConstants.SORT_ONE_YEAR -> FundConstants.ES_FIELD_ONE_YEAR;
-            case FundConstants.SORT_ONE_MONTH -> FundConstants.ES_FIELD_ONE_MONTH;
-            case FundConstants.SORT_THREE_MONTHS -> FundConstants.ES_FIELD_THREE_MONTHS;
-            case FundConstants.SORT_SIX_MONTHS -> FundConstants.ES_FIELD_SIX_MONTHS;
-            case FundConstants.SORT_YEAR_CHANGE, FundConstants.SORT_YTD -> FundConstants.ES_FIELD_YEAR_TO_DATE;
-            case FundConstants.SORT_THREE_YEARS -> FundConstants.ES_FIELD_THREE_YEARS;
-            case FundConstants.SORT_FIVE_YEARS -> FundConstants.ES_FIELD_FIVE_YEARS;
-            case FundConstants.SORT_FUND_CODE -> FundConstants.ES_FIELD_FUND_CODE;
-            case FundConstants.SORT_FUND_NAME -> FundConstants.ES_FIELD_FUND_NAME_KEYWORD;
-            case FundConstants.SORT_UMBRELLA_FUND_TYPE -> FundConstants.ES_FIELD_UMBRELLA_FUND_TYPE;
-            default -> sortBy;
-        };
+        return SortField.fromString(sortBy)
+                .map(SortField::getEsField)
+                .orElse(sortBy);
     }
 
     private String mapReturnPeriodField(String period) {
-        if (period == null) return FundConstants.ES_FIELD_ONE_YEAR;
-
-        return switch (period.toLowerCase()) {
-            case "onemonth", "1month" -> FundConstants.ES_FIELD_ONE_MONTH;
-            case "threemonths", "3months" -> FundConstants.ES_FIELD_THREE_MONTHS;
-            case "sixmonths", "6months" -> FundConstants.ES_FIELD_SIX_MONTHS;
-            case "yeartodate", "ytd" -> FundConstants.ES_FIELD_YEAR_TO_DATE;
-            case "oneyear", "1year" -> FundConstants.ES_FIELD_ONE_YEAR;
-            case "threeyears", "3years" -> FundConstants.ES_FIELD_THREE_YEARS;
-            case "fiveyears", "5years" -> FundConstants.ES_FIELD_FIVE_YEARS;
-            default -> FundConstants.ES_FIELD_ONE_YEAR;
-        };
+        return ReturnPeriodType.fromString(period)
+                .map(ReturnPeriodType::getEsField)
+                .orElse(FundConstants.ES_FIELD_ONE_YEAR);
     }
 }

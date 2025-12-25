@@ -15,24 +15,24 @@ import java.math.BigDecimal;
 @Builder
 @AllArgsConstructor
 public class ReturnPeriods {
-    @Column(scale = 4)
+    @Column(precision = 10, scale = 4)
     private BigDecimal oneMonth;
 
-    @Column(scale = 4)
+    @Column(precision = 10, scale = 4)
     private BigDecimal threeMonths;
 
-    @Column(scale = 4)
+    @Column(precision = 10, scale = 4)
     private BigDecimal sixMonths;
 
-    @Column(scale = 4)
+    @Column(precision = 10, scale = 4)
     private BigDecimal yearToDate;
 
-    @Column(scale = 4)
+    @Column(precision = 10, scale = 4)
     private BigDecimal oneYear;
 
-    @Column(scale = 4)
+    @Column(precision = 10, scale = 4)
     private BigDecimal threeYears;
 
-    @Column(scale = 4)
+    @Column(precision = 10, scale = 4)
     private BigDecimal fiveYears;
 }

@@ -36,7 +36,7 @@ public class FundImportService {
 
         for (ExcelFundRowDTO dto : rows) {
             if (dto.getFundCode() == null || dto.getFundCode().isBlank()) {
-                errors.add("Boş fund code atlandı");
+                errors.add("Empty fund code - skipped");
                 continue;
             }
 
@@ -52,7 +52,7 @@ public class FundImportService {
                     toSave.add(newFund);
                 }
             } catch (Exception e) {
-                String errorMsg = String.format("Fund code '%s' işlenirken hata: %s", dto.getFundCode(), e.getMessage());
+                String errorMsg = String.format("Error processing fund code '%s': %s", dto.getFundCode(), e.getMessage());
                 log.warn(errorMsg, e);
                 errors.add(errorMsg);
             }

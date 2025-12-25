@@ -1,8 +1,8 @@
 package com.oneriver.enums;
 
-import java.text.Normalizer;
+import com.oneriver.utils.StringUtils;
+
 import java.util.Arrays;
-import java.util.Locale;
 
 public enum FundExcelColumn {
     FUND_CODE("Fon Kodu"),
@@ -23,12 +23,7 @@ public enum FundExcelColumn {
     }
 
     private static String normalize(String s) {
-        if (s == null) return "";
-        String n = s.toLowerCase(Locale.ROOT).trim();
-        n = Normalizer.normalize(n, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
-        n = n.replaceAll("[^a-z0-9\\s]", " ");
-        n = n.replaceAll("\\s+", " ");
-        return n;
+        return StringUtils.normalizeForComparison(s);
     }
 
     public static FundExcelColumn fromHeader(String header) {

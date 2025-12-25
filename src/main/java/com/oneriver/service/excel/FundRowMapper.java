@@ -2,11 +2,11 @@ package com.oneriver.service.excel;
 
 import com.oneriver.dto.ExcelFundRowDTO;
 import com.oneriver.enums.FundExcelColumn;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -14,8 +14,12 @@ import java.util.function.Consumer;
 @Component
 public class FundRowMapper implements ExcelRowMapper<ExcelFundRowDTO> {
 
-    @Setter
     private Map<FundExcelColumn, Integer> columnMapping;
+
+    @Override
+    public void setColumnMapping(Map<FundExcelColumn, Integer> mapping) {
+        this.columnMapping = mapping;
+    }
 
     @Override
     public ExcelFundRowDTO mapRow(Row row, int rowNumber) {
@@ -58,16 +62,24 @@ public class FundRowMapper implements ExcelRowMapper<ExcelFundRowDTO> {
     private String getCellValueAsString(Cell cell) {
         if (cell == null) return null;
         try {
-            return switch (cell.getCellType()) {
-                case STRING -> cell.getStringCellValue();
-                case NUMERIC -> String.valueOf(cell.getNumericCellValue());
-                case FORMULA -> {
-                    FormulaEvaluator evaluator = cell.getSheet().getWorkbook().getCreationHelper().createFormulaEvaluator();
-                    CellValue cv = evaluator.evaluate(cell);
-                    yield cv != null ? cv.formatAsString().replace("\"", "") : null;
-                }
-                default -> null;
-            };
+            CellType type = cell.getCellType();
+            if (type == CellType.STRING) {
+                return cell.getStringCellValue();
+            }
+            if (type == CellType.NUMERIC) {
+                DataFormatter formatter = new DataFormatter();
+                return formatter.formatCellValue(cell);
+            }
+            if (type == CellType.FORMULA) {
+                FormulaEvaluator evaluator = cell.getSheet().getWorkbook().getCreationHelper().createFormulaEvaluator();
+                CellValue cv = evaluator.evaluate(cell);
+                if (cv == null) return null;
+                CellType cvType = cv.getCellType();
+                if (cvType == CellType.STRING) return cv.getStringValue();
+                if (cvType == CellType.NUMERIC) return BigDecimal.valueOf(cv.getNumberValue()).toPlainString();
+                return null;
+            }
+            return null;
         } catch (Exception e) {
             return null;
         }

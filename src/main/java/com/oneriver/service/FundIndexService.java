@@ -4,7 +4,6 @@ import com.oneriver.entity.Fund;
 import com.oneriver.entity.document.FundDocument;
 import com.oneriver.mapper.FundMapper;
 import com.oneriver.repository.FundRepository;
-import com.oneriver.utils.FundConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -61,12 +60,12 @@ public class FundIndexService {
 
         try {
             Map<String, Object> settings = createIndexSettings();
-            Map<String, Object> mapping = createMapping();
 
-            indexOps.create(settings);
-            indexOps.putMapping(Document.from(mapping));
+            indexOps.create(Document.from(settings));
+            Document mapping = indexOps.createMapping(FundDocument.class);
+            indexOps.putMapping(mapping);
 
-            log.info("Created Elasticsearch index '{}' with custom mapping and settings", indexName);
+            log.info("Created Elasticsearch index '{}' with mapping and settings", indexName);
         } catch (Exception e) {
             log.error("Failed to create Elasticsearch index", e);
             throw new RuntimeException("Index creation failed", e);
@@ -145,45 +144,4 @@ public class FundIndexService {
         return Map.of("index", settings);
     }
 
-    private Map<String, Object> createMapping() {
-        Map<String, Object> mapping = new HashMap<>();
-        Map<String, Object> properties = new HashMap<>();
-
-        properties.put(FundConstants.ES_FIELD_FUND_CODE,
-                Map.of("type", "keyword"));
-
-        properties.put(FundConstants.ES_FIELD_FUND_NAME,
-                Map.of(
-                        "type", "text",
-                        "analyzer", "turkish",
-                        "fields", Map.of(
-                                "keyword", Map.of(
-                                        "type", "keyword",
-                                        "ignore_above", 256
-                                )
-                        )
-                ));
-
-        properties.put(FundConstants.ES_FIELD_UMBRELLA_FUND_TYPE,
-                Map.of("type", "keyword"));
-
-        Map<String, Object> returnPeriodsProps = new HashMap<>();
-        List<String> returnFields = List.of(
-                "oneMonth", "threeMonths", "sixMonths",
-                "yearToDate", "oneYear", "threeYears", "fiveYears"
-        );
-
-        for (String field : returnFields) {
-            returnPeriodsProps.put(field, Map.of(
-                    "type", "scaled_float",
-                    "scaling_factor", 10000
-            ));
-        }
-
-        properties.put(FundConstants.ES_FIELD_RETURN_PERIODS,
-                Map.of("properties", returnPeriodsProps));
-
-        mapping.put("properties", properties);
-        return mapping;
-    }
 }

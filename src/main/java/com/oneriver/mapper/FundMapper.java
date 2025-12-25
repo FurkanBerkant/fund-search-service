@@ -12,8 +12,6 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 @Mapper(componentModel = "spring", imports = {NumberUtils.class})
@@ -57,27 +55,34 @@ public interface FundMapper {
 
     @Named("mapReturnPeriods")
     default Map<String, BigDecimal> mapReturnPeriods(ReturnPeriods r) {
-        Map<String, BigDecimal> map = new HashMap<>();
-
         if (r == null) {
-            map.put("oneMonth", BigDecimal.ZERO);
-            map.put("threeMonths", BigDecimal.ZERO);
-            map.put("sixMonths", BigDecimal.ZERO);
-            map.put("yearToDate", BigDecimal.ZERO);
-            map.put("oneYear", BigDecimal.ZERO);
-            map.put("threeYears", BigDecimal.ZERO);
-            map.put("fiveYears", BigDecimal.ZERO);
-            return Collections.unmodifiableMap(map);
+            return createEmptyReturnPeriodsMap();
         }
 
-        map.put("oneMonth", r.getOneMonth() != null ? r.getOneMonth() : BigDecimal.ZERO);
-        map.put("threeMonths", r.getThreeMonths() != null ? r.getThreeMonths() : BigDecimal.ZERO);
-        map.put("sixMonths", r.getSixMonths() != null ? r.getSixMonths() : BigDecimal.ZERO);
-        map.put("yearToDate", r.getYearToDate() != null ? r.getYearToDate() : BigDecimal.ZERO);
-        map.put("oneYear", r.getOneYear() != null ? r.getOneYear() : BigDecimal.ZERO);
-        map.put("threeYears", r.getThreeYears() != null ? r.getThreeYears() : BigDecimal.ZERO);
-        map.put("fiveYears", r.getFiveYears() != null ? r.getFiveYears() : BigDecimal.ZERO);
+        return Map.of(
+                "oneMonth", getOrZero(r.getOneMonth()),
+                "threeMonths", getOrZero(r.getThreeMonths()),
+                "sixMonths", getOrZero(r.getSixMonths()),
+                "yearToDate", getOrZero(r.getYearToDate()),
+                "oneYear", getOrZero(r.getOneYear()),
+                "threeYears", getOrZero(r.getThreeYears()),
+                "fiveYears", getOrZero(r.getFiveYears())
+        );
+    }
 
-        return Collections.unmodifiableMap(map);
+    private BigDecimal getOrZero(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
+    }
+
+    private Map<String, BigDecimal> createEmptyReturnPeriodsMap() {
+        return Map.of(
+                "oneMonth", BigDecimal.ZERO,
+                "threeMonths", BigDecimal.ZERO,
+                "sixMonths", BigDecimal.ZERO,
+                "yearToDate", BigDecimal.ZERO,
+                "oneYear", BigDecimal.ZERO,
+                "threeYears", BigDecimal.ZERO,
+                "fiveYears", BigDecimal.ZERO
+        );
     }
 }

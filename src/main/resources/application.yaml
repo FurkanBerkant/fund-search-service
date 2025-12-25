@@ -38,7 +38,7 @@ spring:
 funds:
   index:
     name: funds
-    on-startup: true
+    on-startup: false
     bulk:
       size: 500
     async:
@@ -57,5 +57,4 @@ management:
 
 logging:
   level:
-    org.elasticsearch.client.RestClient: ERROR
     root: INFO

@@ -26,7 +26,6 @@ import java.io.InputStream;
 public class FundIndexStartupRunner implements ApplicationRunner {
 
     private final FundIndexService fundIndexService;
-    private final FundRepository fundRepository;
     private final FundExcelService fundExcelService;
 
     @Override
@@ -34,16 +33,8 @@ public class FundIndexStartupRunner implements ApplicationRunner {
         log.info("Starting fund indexing startup process...");
 
         try {
-            long countInDb = fundRepository.count();
-
-            if (countInDb > 0) {
-                log.info("Found {} funds in database. Syncing to Elasticsearch...", countInDb);
-                syncDatabaseToElasticsearch();
-            } else {
-                log.info("No funds in database. Starting initial Excel import...");
-                importInitialData();
-            }
-
+             syncDatabaseToElasticsearch();
+             importInitialData();
             log.info("Fund indexing startup process completed successfully");
 
         } catch (Exception e) {

@@ -36,9 +36,7 @@ public class ExcelImportService {
                 }
             }
 
-            if (rowMapper instanceof FundRowMapper frm) {
-                frm.setColumnMapping(mapping);
-            }
+            rowMapper.setColumnMapping(mapping);
 
             for (int i = 2; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);

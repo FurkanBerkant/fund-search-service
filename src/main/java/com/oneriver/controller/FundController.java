@@ -28,14 +28,18 @@ public class FundController {
         FundImportResult result = fundExcelService.importAndIndexAsync(file);
 
         Map<String, Object> response = new HashMap<>();
-        response.put("status", "accepted");
+        response.put("status", result.savedFundCodes() == null || result.savedFundCodes().isEmpty() ? "ok" : "accepted");
         response.put("stats", Map.of(
                 "total", result.total(),
                 "success", result.success(),
                 "failed", result.failed()
         ));
-        response.put("savedCodes", result.savedFundCodes());
 
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+        if (!result.savedFundCodes().isEmpty()) {
+            response.put("status", "accepted");
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+        }
+        response.put("status", "ok");
+        return ResponseEntity.ok(response);
     }
 }
