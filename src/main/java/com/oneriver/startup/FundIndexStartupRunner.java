@@ -1,6 +1,5 @@
 package com.oneriver.startup;
 
-import com.oneriver.repository.FundRepository;
 import com.oneriver.service.FundExcelService;
 import com.oneriver.service.FundIndexService;
 import com.oneriver.utils.FundConstants;

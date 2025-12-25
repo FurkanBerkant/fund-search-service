@@ -2,6 +2,7 @@ package com.oneriver.exception;
 
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.elasticsearch.NoSuchIndexException;
 import org.springframework.data.elasticsearch.UncategorizedElasticsearchException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -161,4 +162,11 @@ public class GlobalExceptionHandler {
 
         return response;
     }
+
+    @ExceptionHandler(NoSuchIndexException.class)
+    public ResponseEntity<Map<String,Object>> handleNoIndex(Exception ex, WebRequest req) {
+        Map<String,Object> resp = buildErrorResponse("INDEX_NOT_FOUND","Index not found: " + ex.getMessage(), req.getDescription(false));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resp);
+    }
+
 }
