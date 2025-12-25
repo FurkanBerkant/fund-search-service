@@ -7,6 +7,9 @@ import com.oneriver.repository.FundRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.data.elasticsearch.core.document.Document;
@@ -34,20 +37,17 @@ public class FundIndexService {
 
     @Transactional(readOnly = true)
     public int indexAllFromDb() {
+        int totalIndexed = 0;
+        Pageable pageable = PageRequest.of(0, batchSize);
+        Slice<Fund> fundSlice;
 
-        long startTime = System.currentTimeMillis();
-        List<Fund> allFunds = fundRepository.findAll();
+        do {
+            fundSlice = fundRepository.findAllBy(pageable);
+            totalIndexed += indexFunds(fundSlice.getContent());
+            pageable = fundSlice.nextPageable();
+        } while (fundSlice.hasNext());
 
-        if (allFunds.isEmpty()) {
-            log.warn("No funds found in database to index");
-            return 0;
-        }
-
-        int indexed = indexFunds(allFunds);
-        long duration = System.currentTimeMillis() - startTime;
-
-        log.info("Full re-indexing completed. Indexed {} funds in {} ms", indexed, duration);
-        return indexed;
+        return totalIndexed;
     }
 
     public void ensureIndexWithMapping() {
@@ -114,7 +114,6 @@ public class FundIndexService {
 
         try {
             List<Fund> funds = fundRepository.findAllByFundCodeIn(fundCodes);
-
             if (funds.isEmpty()) {
                 log.warn("No funds found for provided codes: {}", fundCodes);
                 return;

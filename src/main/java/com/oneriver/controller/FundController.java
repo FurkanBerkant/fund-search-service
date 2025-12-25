@@ -25,7 +25,7 @@ public class FundController {
 
     @PostMapping(value = "/import-and-index", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, Object>> importAndIndex(@RequestParam("file") MultipartFile file) {
-        FundImportResult result = fundExcelService.importAndIndexAsync(file);
+        FundImportResult result = fundExcelService.importAndIndex(file);
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", result.savedFundCodes() == null || result.savedFundCodes().isEmpty() ? "ok" : "accepted");

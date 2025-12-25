@@ -7,40 +7,24 @@ spring:
     url: jdbc:postgresql://localhost:5432/funds_db?reWriteBatchedInserts=true
     username: postgres
     password: postgres
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
   jpa:
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
         jdbc:
-          lob:
-            non_contextual_creation: true
           batch_size: 100
           fetch_size: 100
-        order_updates: true
         order_inserts: true
-        generate_statistics: false
-        format_sql: true
-    show-sql: false
-    open-in-view: false
+        order_updates: true
 
   elasticsearch:
     uris: http://localhost:9200
-    connection-timeout: 10s
-    socket-timeout: 30s
 
 funds:
   index:
     name: funds
     on-startup: false
-    bulk:
-      size: 500
     async:
       core-pool-size: 4
       max-pool-size: 8

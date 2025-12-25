@@ -21,7 +21,7 @@ public class FundExcelService {
     private final FundIndexService fundIndexService;
     private final FundRowMapper fundRowMapper;
 
-    public FundImportResult importAndIndexAsync(MultipartFile file) {
+    public FundImportResult importAndIndex(MultipartFile file) {
         List<ExcelFundRowDTO> excelData = excelImportService.importFromExcel(file, fundRowMapper);
         FundImportResult result = fundImportService.process(excelData);
 

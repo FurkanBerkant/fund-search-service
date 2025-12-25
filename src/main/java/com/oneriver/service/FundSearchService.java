@@ -35,11 +35,28 @@ public class FundSearchService {
 
         queryBuilder.withQuery(q -> q.bool(b -> {
             if (query != null && !query.isBlank()) {
+                String normalizedQuery = query.trim();
+
                 return b.must(m -> m.bool(sb -> {
-                    sb.should(s -> s.match(ma -> ma.field(FundConstants.ES_FIELD_FUND_CODE)
-                            .query(query).fuzziness("AUTO")));
-                    sb.should(s -> s.match(ma -> ma.field(FundConstants.ES_FIELD_FUND_NAME)
-                            .query(query).fuzziness("AUTO")));
+                    sb.should(s -> s.term(t -> t
+                            .field(FundConstants.ES_FIELD_FUND_CODE)
+                            .value(normalizedQuery.toUpperCase())
+                            .boost(10.0f)));
+                    sb.should(s -> s.prefix(p -> p
+                            .field(FundConstants.ES_FIELD_FUND_CODE)
+                            .value(normalizedQuery.toUpperCase())
+                            .boost(5.0f)));
+                    sb.should(s -> s.match(ma -> ma
+                            .field(FundConstants.ES_FIELD_FUND_NAME)
+                            .query(normalizedQuery)
+                            .fuzziness("AUTO")
+                            .boost(2.0f)));
+                    sb.should(s -> s.match(ma -> ma
+                            .field(FundConstants.ES_FIELD_UMBRELLA_FUND_TYPE)
+                            .query(normalizedQuery)
+                            .boost(1.0f)));
+
+                    sb.minimumShouldMatch("1");
                     return sb;
                 }));
             }

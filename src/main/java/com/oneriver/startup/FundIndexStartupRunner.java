@@ -29,13 +29,9 @@ public class FundIndexStartupRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        log.info("Starting fund indexing startup process...");
-
         try {
              syncDatabaseToElasticsearch();
              importInitialData();
-            log.info("Fund indexing startup process completed successfully");
-
         } catch (Exception e) {
             log.error("Fatal error during startup indexing process", e);
             throw new RuntimeException("Startup indexing failed", e);
@@ -58,8 +54,6 @@ public class FundIndexStartupRunner implements ApplicationRunner {
         if (!resource.exists()) {
             log.warn("Default Excel file '{}' not found in classpath. Skipping initial import.",
                     FundConstants.DEFAULT_EXCEL_FILE);
-            log.info("To enable initial data import, place '{}' in src/main/resources",
-                    FundConstants.DEFAULT_EXCEL_FILE);
             return;
         }
 
@@ -70,10 +64,7 @@ public class FundIndexStartupRunner implements ApplicationRunner {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     is
             );
-
-            log.info("Importing initial data from '{}'", FundConstants.DEFAULT_EXCEL_FILE);
-            var result = fundExcelService.importAndIndexAsync(file);
-
+            var result = fundExcelService.importAndIndex(file);
             log.info("Initial import completed. Total: {}, Success: {}, Failed: {}",
                     result.total(),
                     result.success(),

@@ -21,7 +21,6 @@ public final class FundConstants {
     public static final String ES_FIELD_FUND_NAME = "fundName";
     public static final String ES_FIELD_FUND_NAME_KEYWORD = "fundName.keyword";
     public static final String ES_FIELD_UMBRELLA_FUND_TYPE = "umbrellaFundType";
-    public static final String ES_FIELD_RETURN_PERIODS = "returnPeriods";
     public static final String ES_FIELD_ONE_MONTH = "returnPeriods.oneMonth";
     public static final String ES_FIELD_THREE_MONTHS = "returnPeriods.threeMonths";
     public static final String ES_FIELD_SIX_MONTHS = "returnPeriods.sixMonths";

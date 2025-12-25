@@ -12,10 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -73,10 +72,20 @@ public class FundImportService {
                 .map(ExcelFundRowDTO::getFundCode)
                 .filter(StringUtils::hasText)
                 .map(code -> code.trim().toUpperCase())
+                .distinct()
                 .toList();
 
-        return fundRepository.findAllByFundCodeIn(codes)
-                .stream()
-                .collect(Collectors.toMap(Fund::getFundCode, Function.identity()));
+        Map<String, Fund> result = new HashMap<>();
+        int batchSize = 500;
+
+        for (int i = 0; i < codes.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, codes.size());
+            List<String> batch = codes.subList(i, end);
+
+            List<Fund> funds = fundRepository.findAllByFundCodeIn(batch);
+            funds.forEach(f -> result.put(f.getFundCode(), f));
+        }
+
+        return result;
     }
 }
