@@ -90,7 +90,25 @@ mvn clean package -DskipTests
 java -jar target/fund-search-service-0.0.1-SNAPSHOT.jar
 ```
 
-Uygulama: http://localhost:8080
+### ✅ Uygulama Hazır!
+
+Uygulama başladıktan sonra aşağıdaki endpoint'lere erişebilirsiniz:
+
+| Endpoint | Açıklama |
+|----------|----------|
+| `http://localhost:8080/api/funds/search` | Fon arama API |
+| `http://localhost:8080/api/funds/top-performers` | En iyi performans |
+| `http://localhost:8080/swagger-ui.html` | API Dokümantasyonu |
+| `http://localhost:8080/actuator/health` | Sağlık durumu kontrolü |
+
+**Hızlı Test:**
+```bash
+# Sağlık durumu kontrolü
+curl http://localhost:8080/actuator/health
+
+# Tüm fonları listele
+curl "http://localhost:8080/api/funds/search"
+```
 
 ---
 
