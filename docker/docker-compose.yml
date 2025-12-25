@@ -49,22 +49,6 @@ services:
       - elasticsearch
     restart: unless-stopped
 
-  elastic-setup:
-    image: curlimages/curl:8.2.1
-    container_name: elastic-setup
-    entrypoint: ["/bin/sh", "/usr/local/bin/setup-elastic.sh"]
-    volumes:
-      - ./setup-elastic.sh:/usr/local/bin/setup-elastic.sh:ro
-    environment:
-      ES_URL: "http://elasticsearch:9200"
-      KIBANA_URL: "http://kibana:5601"
-    depends_on:
-      - elasticsearch
-      - kibana
-    networks:
-      - fund_search_net
-    restart: "no"
-
 volumes:
   fund_search-postgres-data:
   fund_search-es-data:
